@@ -1,0 +1,144 @@
+C51 COMPILER V9.57.0.0   MAIN                                                              12/03/2024 22:25:07 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\keil\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.ls
+                    -t) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          #include "Delay.h"
+   3          #include "LCD1602.h"
+   4          #include "Timer0.h"
+   5          #include "Nixie.h"
+   6          #include "MatrixKey.h"
+   7          #include "Buzzer.h"
+   8          
+   9          sbit Buzzer=P2^5;
+  10          unsigned int Sec=30;  //炸弹时间为30秒
+  11          unsigned char KeyNum;
+  12          unsigned int password,Count;
+  13          unsigned int flag=0;
+  14          
+  15          void main()
+  16          {
+  17   1        LCD_Init();   //LED1602初始化
+  18   1        Timer0Init();   //定时器初始化
+  19   1        LCD_ShowString(1,1,"password");
+  20   1        
+  21   1        while(1)
+  22   1        {
+  23   2          Nixie(3,Sec/10);  //数码管显示时间
+  24   2          Delay(1);
+  25   2          Nixie(4,Sec%10);   //数码管显示时间
+  26   2          Delay(1);
+  27   2          KeyNum=MatrixKey();  //矩阵键盘扫描
+  28   2          if(KeyNum)
+  29   2          {
+  30   3             if(KeyNum<=10)    //如果s1~s10按键按下，输入第一个数
+  31   3              {
+  32   4                if(Count<5)   //输入五位拆弹密码
+  33   4                {
+  34   5                  password*=10;      //输入的数左移一位
+  35   5                  password+=KeyNum%10;   //获取一位数
+  36   5                  Count++;   //按下键盘的次数加一  
+  37   5                }
+  38   4              }
+  39   3            LCD_ShowNum(2,1,password,5);    //LED1602更新显示
+  40   3          }
+  41   2          if(KeyNum==11)    //如果s11按键按下，接下来对输入的拆弹密码进行检验
+  42   2          {
+  43   3            if(password==12345)    //如果拆弹密码输入正确
+  44   3            {
+  45   4              LCD_ShowString(1,1,"        ");  //LED1602更新显示
+  46   4              LCD_ShowString(2,1,"        ");   //更新显示
+  47   4              Delay(1000);
+  48   4              Delay(1000);
+  49   4              Delay(1000);
+  50   4              Delay(1000);
+  51   4              LCD_ShowString(1,1,"success ");   //更新显示，炸弹成功拆除标志 
+  52   4              Count=0;       //计次清零
+  53   4              flag=1;
+  54   4            }
+C51 COMPILER V9.57.0.0   MAIN                                                              12/03/2024 22:25:07 PAGE 2   
+
+  55   3            if(password!=12345)   //如果拆弹密码错误
+  56   3            {
+  57   4              password=0;    //密码清零，可以重新再次输入密码
+  58   4              Count=0;       //计次清零
+  59   4              LCD_ShowString(1,1,"error   ");   //LED1602更新显示，密码错误
+  60   4              Delay(1000);
+  61   4              LCD_ShowString(1,1,"password");   //LED1602更新显示
+  62   4              LCD_ShowNum(2,1,password,5);    //LED1602更新显示
+  63   4            }
+  64   3          }
+  65   2          if(KeyNum==12)  //如果s12按键按下，重置密码
+  66   2          {
+  67   3            password=0;    //密码清零
+  68   3            Count=0;       //计次清零
+  69   3            LCD_ShowNum(2,1,password,5);    //LED1602更新显示
+  70   3          }
+  71   2        }
+  72   1      }
+  73          void Timer0_Routine() interrupt 1  //中断函数
+  74          {
+  75   1        static unsigned int T0Count;
+  76   1        TL0 = 0x18;   //设置定时初值
+  77   1        TH0 = 0xFC;   //设置定时初值
+  78   1        T0Count++;
+  79   1        if(T0Count>=1000)
+  80   1        {
+  81   2          T0Count=0;
+  82   2          if(flag==1)  //炸弹拆除
+  83   2          {
+  84   3            Sec=0;
+  85   3          }
+  86   2          if(flag==0)  //炸弹还未拆除
+  87   2          {
+  88   3            Sec--;
+  89   3            if(Sec>=20)  
+  90   3            {
+  91   4              Buzzer_Time(100);
+  92   4            }
+  93   3            if(Sec>=10&&Sec<20)  //炸弹警告声频率加快
+  94   3            {
+  95   4              Buzzer_Time(80);
+  96   4              Delay(1);
+  97   4              Buzzer_Time(80);
+  98   4              Delay(1);
+  99   4            }
+ 100   3            if(Sec>0&&Sec<10)    //炸弹警告声频率更快
+ 101   3            {
+ 102   4              Buzzer_Time(50);
+ 103   4              Delay(1);
+ 104   4              Buzzer_Time(50);
+ 105   4              Delay(1);
+ 106   4              Buzzer_Time(50);
+ 107   4              Delay(1);
+ 108   4            }
+ 109   3            if(Sec==0)    //时间结束，炸弹被引燃
+ 110   3            {
+ 111   4              LCD_ShowString(1,1,"Boom!!! ");  //LED1602更新显示
+ 112   4              Buzzer_Time(100000);   //爆炸声！！！
+ 113   4            }
+ 114   3          }
+ 115   2        }
+ 116   1      }
+C51 COMPILER V9.57.0.0   MAIN                                                              12/03/2024 22:25:07 PAGE 3   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    621    ----
+   CONSTANT SIZE    =     45    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     11    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
