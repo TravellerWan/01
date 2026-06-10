@@ -1,0 +1,187 @@
+C51 COMPILER V9.54   MAIN                                                                  11/30/2024 20:07:00 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\51ALL\Keli5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\
+                    -main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <REGX52.H>
+   2          #include "Delay.h"
+   3          #include "LCD1602.h"
+   4          #include "MatrixKey.h"
+   5          #include "Timer0.h"
+   6          #include "Buzzer.h"
+   7          
+   8          unsigned char KeyNum;
+   9          unsigned int Password=0000,Count;
+  10          unsigned char Sec=8,Min=0,Hour=0;
+  11          bit TimerRunning = 1; // 定时器运行标志位 
+  12          
+  13          void main()
+  14          { 
+  15   1        LCD_Init();
+  16   1        Timer0Init();          //初始化设定屏幕和定时器
+  17   1        
+  18   1        LCD_ShowString(2,1,"Password:");
+  19   1        LCD_ShowString(1,1,"ct :");             //初始化界面图形
+  20   1        LCD_ShowString(1,6,"  :  :");
+  21   1        
+  22   1      
+  23   1        
+  24   1        while(1)
+  25   1           {
+  26   2                LCD_ShowNum(1,6,Hour,2);
+  27   2                LCD_ShowNum(1,9,Min,2);         //显示倒计时
+  28   2                LCD_ShowNum(1,12,Sec,2);
+  29   2              
+  30   2             KeyNum = MatrixKey();
+*** WARNING C206 IN LINE 30 OF main.c: 'MatrixKey': missing function-prototype
+  31   2              if(KeyNum)
+  32   2                {
+  33   3                  if(KeyNum<=10)  //如果S1~s10按下，输入密码
+  34   3                  {
+  35   4                    if(Count<4)//如果输入次数小于4
+  36   4                    {
+  37   5                      Password*=10;         //密码左移一位
+  38   5                      Password+=KeyNum%10;    //获取一位密码
+  39   5                      Count++;  //计次加一
+  40   5                    }
+  41   4                    LCD_ShowNum(2,10,Password,4);   //更新显示
+  42   4                  }
+  43   3                  if(KeyNum==11)                 //确认输入的密码
+  44   3                  {
+  45   4                      if(Password==2887)         //密码比对
+  46   4                      {
+  47   5                        LCD_ShowString(2,14," OK");  //显示OK
+  48   5      //                  Password=0;     //密码清零
+  49   5                        Count=0;        //计次清零
+  50   5                        LCD_ShowNum(2,10,Password,4);
+  51   5                        
+  52   5                        while(1)
+  53   5                        {  
+C51 COMPILER V9.54   MAIN                                                                  11/30/2024 20:07:00 PAGE 2   
+
+  54   6                          LCD_ShowNum(1,6,Hour,2);
+  55   6                          LCD_ShowNum(1,9,Min,2);           //密码正确，但为时已晚
+  56   6                          LCD_ShowNum(1,12,Sec,2);
+  57   6                          if(Sec<4&&Min==0&&Hour==0)
+  58   6                          { 
+  59   7                            LCD_ShowString(2,1,"                 "); 
+  60   7                            LCD_ShowString(1,1,"Late"); 
+  61   7                            if(Sec<=0&&Min==0&&Hour==0)
+  62   7                            { 
+  63   8                              LCD_Init();
+  64   8                              LCD_ShowString(2,4,"!!!Bomb!!!");
+  65   8                              Buzzer_Time(200);
+  66   8                            }
+  67   7                            
+  68   7                          } 
+  69   6                           if(Sec>=4&&Min>=0&&Hour>=0)    //及时拆除C4
+  70   6                          { Sec=4,Min=0,Hour=0;
+  71   7                            while(1)
+  72   7                            {
+  73   8                              LCD_ShowNum(1,6,Hour,2);
+  74   8                              LCD_ShowNum(1,9,Min,2);           
+  75   8                              LCD_ShowNum(1,12,Sec,2);
+  76   8                              LCD_ShowString(1,1,"safe"); 
+  77   8                            }
+  78   7                          }
+  79   6                        }
+  80   5          
+  81   5                      }
+  82   4                      else
+  83   4                      {
+  84   5                          LCD_ShowString(2,14,"ERR");  //显示ERR   错误
+  85   5                          Password=0;     //密码清零
+  86   5                          Count=0;        //计次清零
+  87   5                          LCD_ShowNum(2,10,Password,4);
+  88   5                             
+  89   5                      }
+  90   4                      
+  91   4                    }
+  92   3                  if(KeyNum==12)         //清零
+  93   3                      {
+  94   4                        Password=0;     //密码清零
+  95   4                        Count=0;        //计次清零
+  96   4                        LCD_ShowNum(2,10,Password,4);
+  97   4                        LCD_ShowString(2,14,"   ");
+  98   4                      }
+  99   3                          
+ 100   3                }
+ 101   2                 if(Password==0000&&Sec==0&&Min==0&&Hour==0)    //无人拆弹
+ 102   2                  {
+ 103   3                      LCD_Init();
+ 104   3                      LCD_ShowString(1,1,"                 "); 
+ 105   3                      LCD_ShowString(2,4,"!!!Bomb!!!");
+ 106   3                      Buzzer_Time(200);
+ 107   3                  } 
+ 108   2      
+ 109   2          }
+ 110   1      }                    //shift+tab  减少一个缩进
+ 111          
+ 112          
+ 113          
+ 114          void Timer0_Routine()  interrupt 1
+ 115          {
+C51 COMPILER V9.54   MAIN                                                                  11/30/2024 20:07:00 PAGE 3   
+
+ 116   1          static unsigned int T0Count;
+ 117   1          TL0 = 0xCD;   //设置定时初值
+ 118   1          TH0 = 0xD4;   //设置定时初值
+ 119   1          T0Count++;
+ 120   1          if(T0Count>=1000)
+ 121   1            {
+ 122   2              T0Count=0;
+ 123   2              Sec--;
+ 124   2              if(Sec<0)
+ 125   2              {
+ 126   3                Sec=59;
+ 127   3                Min--;
+ 128   3                if(Min<0)
+ 129   3                {
+ 130   4                  Min=59;
+ 131   4                  Hour--;
+ 132   4                  if(Hour<0)
+ 133   4                  {
+ 134   5                    Hour=0;
+ 135   5                     
+ 136   5                  }
+ 137   4                 }
+ 138   3              } 
+ 139   2              else if(Sec==0&&Min==0&&Hour==0)
+ 140   2              {
+ 141   3              // 禁用定时器
+ 142   3                TimerRunning = 0;
+ 143   3                ET0 = 0; // 禁用定时器0中断
+ 144   3                TR0 = 0; // 停止定时器0
+ 145   3              }
+ 146   2              
+ 147   2            }
+ 148   1          
+ 149   1      } 
+ 150          
+ 151          
+ 152          
+ 153          
+ 154          
+ 155            
+ 156            
+ 157            
+ 158            
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    687    ----
+   CONSTANT SIZE    =     73    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     10    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)
